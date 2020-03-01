@@ -1,0 +1,2 @@
+ssh-rsa Add entry from public key. Should be the same for nodes in the cluser 
+ percona@db-mongod-0-0
