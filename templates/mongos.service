@@ -1,0 +1,27 @@
+[Unit]
+Description=Mongo router service
+After=syslog.target
+After=network.target
+After=bind9.service
+
+[Service]
+PIDFile=/var/run/mongodb/mongod.pid
+User=mongod
+Group=mongod
+
+ExecStart=/usr/bin/mongos --config /mongodb/conf/mongos.conf
+TimeoutSec=60
+Restart=always
+
+# Mongo recommended limits
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+TasksMax=infinity
+TasksAccounting=false
+
+[Install]
+WantedBy=multi-user.target
+# Alias=mongos.service

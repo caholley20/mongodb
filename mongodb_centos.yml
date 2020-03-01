@@ -1,0 +1,108 @@
+---
+- hosts: all
+  become: True
+  tasks:
+     - name: Create custom policy
+       copy:
+         src: /Users/clareholley/workenv/mongodb/templates/mongodb_cgroup_memory.te
+         dest: /tmp/mongodb_cgroup_memory.te
+         owner: root
+         group: root
+
+     - name: Complie linux module file
+       command:
+       command: checkmodule -M -m -o /tmp/mongodb_cgroup_memory.mod /tmp/mongodb_cgroup_memory.te
+
+     - name: Build Linux policy package
+       command:
+       command: semodule_package -o /tmp/mongodb_cgroup_memory.pp -m /tmp/mongodb_cgroup_memory.mod
+
+     - name: Load  policy package
+       command:
+       command: semodule -i /tmp/mongodb_cgroup_memory.pp
+
+     - name:  Change mongodbjournal ownership  
+       file:  
+         path: /mongodbjournal 
+         state: directory
+         group: mongod
+         owner: mongod
+
+     - name: Create remaining directories Mongodb
+       file:
+         path: "/mongodb/{{ item }}"
+         state:  directory
+         recurse: yes
+         owner: mongod
+         group: mongod
+         mode: '0755'
+         recurse: yes
+       with_items: ["conf","dbdata","scripts","tmp"]
+
+     - name: Copy Mongod Conf file 
+       copy:
+         src: /Users/clareholley/workenv/mongodb/templates/mongod.conf
+         dest: /mongodb/conf/mongod.conf
+         owner: mongod
+         group: mongod
+         mode:  '0600'
+
+     - name: Copy Mongod kefile 
+       copy:
+         src: /Users/clareholley/workenv/mongodb/templates/mongokey
+         dest: /mongodb/conf/mongokey
+         owner: mongod
+         group: mongod
+         mode:  '0600'
+    
+     - name:  Update semange Mongo to use new directories 
+       command: semanage fcontext -a -t mongod_var_lib_t '/mongodb.*'
+
+     - name:  Update Mongo to use new directories
+       command: chcon -Rv -u system_u -t mongod_var_lib_t '/mongodb'
+
+     - name:  Update restorecon eongo to use new directories
+       command: restorecon -R -v '/mongodb' 
+
+     - name:  Update Mongodb Port  
+       command: semanage port -a -t mongod_port_t -p tcp 27001
+
+     - name: Create proc custom policy
+       copy:
+         src: /Users/clareholley/workenv/mongodb/templates/mongodb_proc_net.te
+         dest: /tmp/mongodb_proc_net.te
+         owner: root
+         group: root 
+
+     - name: Compile OR Proc Custom Policy  
+       command: checkmodule -M -m -o /tmp/mongodb_proc_net.mod /tmp/mongodb_proc_net.te
+      
+     - name: Build  OR Proc Custom Policy  
+       command: semodule_package -o /tmp/mongodb_proc_net.pp -m /tmp/mongodb_proc_net.mod 
+
+     - name: Load ORR Proc Custom Policy  
+       command: semodule -i /tmp/mongodb_proc_net.pp
+
+     - name: Update Mongo Service path file 
+       lineinfile:
+        path: /lib/systemd/system/mongod.service
+        regexp: /etc/mongod.conf
+        line: Environment="OPTIONS=-f /mongodb/conf/mongod.conf" 
+
+     - name: Update Mongo Service fork file 
+       lineinfile:
+         path: /lib/systemd/system/mongod.service
+         state: present
+         regexp: 'Type=forking'
+         line: '#Type=forking' 
+
+     - name: Reload Daemon
+       systemd: 
+         daemon_reload: yes
+   
+     - name: Restart Mongod services
+       systemd:
+         name: mongod
+         state: restarted
+
+

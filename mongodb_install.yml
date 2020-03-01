@@ -1,0 +1,91 @@
+---
+- hosts: all
+  become: True
+  tasks:
+     - name: install unzip 
+       yum:
+         name: 
+#           - unzip
+           - python3
+           - sysstat
+           - java 
+           - traceroute
+           - ansible
+           - vim
+           - wget
+         state: present
+
+     - name: Download awscli     
+       command:
+       command: curl https://s3.amazonaws.com/aws-cli/awscli-bundle.zip -o /tmp/awscli-bundle.zip
+
+     - name: Unzip awscli bundle
+       unarchive:
+         src: /tmp/awscli-bundle.zip
+         dest: /tmp/
+         remote_src: yes
+
+     - name: Install awscli bundle
+       command:
+       command: "/usr/bin/python3 /tmp/awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws"
+
+     - name: Create Filesystem
+       filesystem:
+         fstype: xfs 
+         dev: /dev/sdb
+
+     - name: Create repo file
+       copy:
+         src: /Users/clareholley/workenv/mongodb/templates/mongodb-org-4.0.repo
+         dest: /etc/yum.repos.d/mongodb-org-4.0.repo
+         owner: root
+         group: root
+
+     - name: Install mongo repo
+       yum:
+        name:
+          - mongodb-org-4.0.14
+          - mongodb-org-server-4.0.14
+          - mongodb-org-shell-4.0.14
+          - mongodb-org-mongos-4.0.14
+          - mongodb-org-tools-4.0.14
+        state: present
+
+     - name: Create directories for Mongodb 
+       file:  
+         path: /mongodb/
+         state: directory
+         mode:  '0755'
+         group: mongod
+         owner: mongod
+
+     - name: Change ownership  
+       file:  
+         path: /mongodb
+         state: directory
+         group: mongod
+         owner: mongod
+
+     - name: Mount Filesystem
+       mount:
+         path: /mongodb 
+         src: /dev/sdb
+         fstype: xfs
+         state: mounted
+
+     - name: Create directories for ssh  
+       file:  
+         path: /home/percona/.ssh/
+         state: directory
+         mode:  '0700'
+         group: mongod
+         owner: mongod
+
+     - name: Copy ssh file 
+       copy:
+         src: /Users/clareholley/workenv/mongodb/templates/authorized_keys
+         dest: /home/percona/.ssh/
+         owner: mongod
+         group: mongod
+         mode:  '0600'
+
