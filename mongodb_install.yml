@@ -13,6 +13,7 @@
            - ansible
            - vim
            - wget
+           - telnet
          state: present
 
      - name: Download awscli     
