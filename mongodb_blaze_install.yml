@@ -1,0 +1,84 @@
+---
+- hosts: all
+  become: True
+  tasks:
+     - name: install unzip 
+       yum:
+         name: 
+#           - unzip
+           - python3
+           - sysstat
+           - java 
+           - traceroute
+           - vim
+           - wget
+           - telnet
+         state: present
+
+     - name: Download awscli     
+       command:
+       command: curl https://s3.amazonaws.com/aws-cli/awscli-bundle.zip -o /tmp/awscli-bundle.zip
+
+     - name: Unzip awscli bundle
+       unarchive:
+         src: /tmp/awscli-bundle.zip
+         dest: /tmp/
+         remote_src: yes
+
+     - name: Install awscli bundle
+       command:
+       command: "/usr/bin/python3 /tmp/awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws"
+
+     - name: Create repo file
+       copy:
+         src: /Users/clareholley/workenv/mongodb/templates/mongodb-org-3.6.repo
+         dest: /etc/yum.repos.d/mongodb-org-3.6.repo
+         owner: root
+         group: root
+
+     - name: Install mongo repo
+       yum:
+        name:
+          - mongodb-org-3.6.17
+          - mongodb-org-server-3.6.17
+          - mongodb-org-shell-3.6.17
+          - mongodb-org-mongos-3.6.17
+          - mongodb-org-tools-3.6.17
+        state: present
+
+     - name: Create directories for Mongodb 
+       file:  
+         path: /mongodb/
+         state: directory
+         mode:  '0755'
+         group: mongod
+         owner: mongod
+
+     - name: Change ownership  
+       file:  
+         path: /mongodb
+         state: directory
+         recurse: yes
+         group: mongod
+         owner: mongod
+
+     - name: Create directories for Mongodb logs
+       file:  
+         path: /logsdrive
+         state: directory
+         mode:  '0755'
+         group: mongod
+         owner: mongod
+
+     - name: Change ownership  
+       file:  
+         path: /logsdrive
+         state: directory
+         group: mongod
+         owner: mongod
+
+     - name: Mount Filesystem
+       command:
+       command: mount -a 
+
+
